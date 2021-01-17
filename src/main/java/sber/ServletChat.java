@@ -8,16 +8,18 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class ServletChat extends HttpServlet{
-    private List<String> chatMessages = new ArrayList<>();
+    private List<Message> chatMessages = new ArrayList<>();
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        Cookie[] cookies = req.getCookies();
+    private String getLoginFromCookie(HttpServletRequest request)
+    {
+        String login = null;
+
+        Cookie[] cookies = request.getCookies();
         String cookieName = "login";
         Cookie cookie = null;
         if(cookies !=null) {
@@ -29,26 +31,35 @@ public class ServletChat extends HttpServlet{
             }
         }
 
+        if(cookie!=null)
+        {
+            login = cookie.getValue();
+            return login;
+        }
+
+        return login;
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        String login = getLoginFromCookie(request);
+
         //проверяем что пользователь уже авторизовался
-        if(cookie==null)
+        if(login==null)
         {
             //перенаправляем клиента на форму авторизации
             String path = "/authorization-form.html";
             ServletContext servletContext = getServletContext();
             RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(path);
-            requestDispatcher.forward(req, resp);
+            requestDispatcher.forward(request, response);
         }
         else{
             //отображаем все сообщения чата
-            //передаём список со всеми сообщениями чата на JSP страницу
-            chatMessages.add("Message 1");
-            chatMessages.add("Message 2");
-            chatMessages.add("Message 3");
+            request.setAttribute("chatMessages", chatMessages);
+            getServletContext().getRequestDispatcher("/index.jsp").forward(request, response);
 
-            req.setAttribute("chatMessages", chatMessages);
-            getServletContext().getRequestDispatcher("/index.jsp").forward(req, resp);
-
-            System.out.println("ServletChat - doGet -"+cookie.getValue());
+            System.out.println("ServletChat - doGet -"+login);
         }
 
     }
@@ -60,23 +71,52 @@ public class ServletChat extends HttpServlet{
         response.setContentType("text/html");
 
         String login = request.getParameter("login");
+        String msg = request.getParameter("message");
+        String exit = request.getParameter("exit");
 
+        //получение логина из формы авторизации
         if(login!=null) {
-            System.out.println("Connect to chat user - " + login);
+            //устанавливаем в cookie пользователя значение логина, которое мы получили из формы авторизации
             response.addCookie(new Cookie("login", login));
 
-            //отображаем все сообщения чата
-            String path = "/index.jsp";
-            ServletContext servletContext = getServletContext();
+            //передаём список со всеми сообщениями чата на JSP страницу
+            request.setAttribute("chatMessages", chatMessages);
+            //getServletContext().getRequestDispatcher("/index.jsp").forward(request, response);  <--Post-Redirect-Get
+            response.sendRedirect(request.getContextPath() + request.getServletPath());
+            System.out.println("Connect to chat user - " + login);
+        }
 
-            //chatMessages.add("Message form Pasha");
-            //chatMessages.add("Message from Vova");
+        //добавление в чат нового сообщения
+        if(msg!=null)
+        {
+            //формируем сообщение и добавляем его в список
+            Message message = new Message(getLoginFromCookie(request),msg,new Date());
+            chatMessages.add(message);
 
             //передаём список со всеми сообщениями чата на JSP страницу
-            //request.setAttribute("chatMessages",chatMessages);
-            //servletContext.getRequestDispatcher("/index.jsp").forward(request,response);
-            RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(path);
-            requestDispatcher.forward(request, response);
+            request.setAttribute("chatMessages", chatMessages);
+            //getServletContext().getRequestDispatcher("/index.jsp").forward(request, response); <--Post-Redirect-Get
+            response.sendRedirect(request.getContextPath() + request.getServletPath());
+            System.out.println("Add message to chat");
         }
+
+        //выход из чата
+        if(exit!=null)
+        {
+            //устанавливаем в cookie время жизни 0, тем самым очищаем их и передаем обратно клиенту
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    cookie.setMaxAge(0);
+                    response.addCookie(cookie);
+                }
+            }
+
+            //переходим на форму авторизации
+            getServletContext().getRequestDispatcher("/authorization-form.html").forward(request, response);
+            System.out.println("Exit from chat");
+        }
+
     }
 }
+
