@@ -9,8 +9,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServletChat extends HttpServlet{
+    private List<String> chatMessages = new ArrayList<>();
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Cookie[] cookies = req.getCookies();
@@ -36,10 +40,13 @@ public class ServletChat extends HttpServlet{
         }
         else{
             //отображаем все сообщения чата
-            String path = "/index.jsp";
-            ServletContext servletContext = getServletContext();
-            RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(path);
-            requestDispatcher.forward(req, resp);
+            //передаём список со всеми сообщениями чата на JSP страницу
+            chatMessages.add("Message 1");
+            chatMessages.add("Message 2");
+            chatMessages.add("Message 3");
+
+            req.setAttribute("chatMessages", chatMessages);
+            getServletContext().getRequestDispatcher("/index.jsp").forward(req, resp);
 
             System.out.println("ServletChat - doGet -"+cookie.getValue());
         }
@@ -61,6 +68,13 @@ public class ServletChat extends HttpServlet{
             //отображаем все сообщения чата
             String path = "/index.jsp";
             ServletContext servletContext = getServletContext();
+
+            //chatMessages.add("Message form Pasha");
+            //chatMessages.add("Message from Vova");
+
+            //передаём список со всеми сообщениями чата на JSP страницу
+            //request.setAttribute("chatMessages",chatMessages);
+            //servletContext.getRequestDispatcher("/index.jsp").forward(request,response);
             RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(path);
             requestDispatcher.forward(request, response);
         }
