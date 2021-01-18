@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class ServletChat extends HttpServlet{
+public class ServletChat extends HttpServlet {
     private List<Message> chatMessages = new ArrayList<>();
 
     private String getLoginFromCookie(HttpServletRequest request)
