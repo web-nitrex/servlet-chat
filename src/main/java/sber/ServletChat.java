@@ -53,13 +53,15 @@ public class ServletChat extends HttpServlet{
             ServletContext servletContext = getServletContext();
             RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(path);
             requestDispatcher.forward(request, response);
+
+            System.out.println("Redirection to the authorization form.");
         }
         else{
             //отображаем все сообщения чата
             request.setAttribute("chatMessages", chatMessages);
             getServletContext().getRequestDispatcher("/index.jsp").forward(request, response);
 
-            System.out.println("ServletChat - doGet -"+login);
+            System.out.println("Displaying chat messages - "+login);
         }
 
     }
@@ -79,29 +81,23 @@ public class ServletChat extends HttpServlet{
             //устанавливаем в cookie пользователя значение логина, которое мы получили из формы авторизации
             response.addCookie(new Cookie("login", login));
 
-            //передаём список со всеми сообщениями чата на JSP страницу
-            request.setAttribute("chatMessages", chatMessages);
-            //getServletContext().getRequestDispatcher("/index.jsp").forward(request, response);  <--Post-Redirect-Get
+            //обновляем страницу
             response.sendRedirect(request.getContextPath() + request.getServletPath());
+
             System.out.println("Connect to chat user - " + login);
         }
-
-        //добавление в чат нового сообщения
-        if(msg!=null)
+        else if(msg!=null) //добавление в чат нового сообщения
         {
             //формируем сообщение и добавляем его в список
             Message message = new Message(getLoginFromCookie(request),msg,new Date());
             chatMessages.add(message);
 
-            //передаём список со всеми сообщениями чата на JSP страницу
-            request.setAttribute("chatMessages", chatMessages);
-            //getServletContext().getRequestDispatcher("/index.jsp").forward(request, response); <--Post-Redirect-Get
+            //обновляем страницу
             response.sendRedirect(request.getContextPath() + request.getServletPath());
+
             System.out.println("Add message to chat");
         }
-
-        //выход из чата
-        if(exit!=null)
+        else if(exit!=null) //выход из чата
         {
             //устанавливаем в cookie время жизни 0, тем самым очищаем их и передаем обратно клиенту
             Cookie[] cookies = request.getCookies();
@@ -114,7 +110,8 @@ public class ServletChat extends HttpServlet{
 
             //переходим на форму авторизации
             getServletContext().getRequestDispatcher("/authorization-form.html").forward(request, response);
-            System.out.println("Exit from chat");
+
+            System.out.println("Exit from chat - "+getLoginFromCookie(request));
         }
 
     }

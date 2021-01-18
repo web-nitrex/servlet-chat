@@ -1,12 +1,13 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page contentType="text/html; charset=utf-8" pageEncoding="Cp1251" %>
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>JSP Application</title>
+<meta http-equiv="content-type" content="text/html; charset=cp1251">
+<title>Chat</title>
 </head>
 <body>
-
+    <% response.setIntHeader("Refresh", 10); %>
     <h2>Chat</h2>
     <p>
     <c:forEach var="msg" items="${chatMessages}">
