@@ -17,7 +17,7 @@
     </c:forEach>
 
      <form action="chat" method="post">
-          <p>Message [${cookie.login.value}]:<br>
+          <p>Message [${login}]:<br>
           <textarea name="message" cols="40" rows="3"></textarea></p>
           <p><input type="submit" value="Send">
           <input type="reset" value="Clear"></p>
@@ -26,6 +26,7 @@
         <p><input name="exit" type="submit" value="Exit" />
      </form>
 
+    <a href="admin.html">Admin Panel</a>
 
 </body>
 </html>

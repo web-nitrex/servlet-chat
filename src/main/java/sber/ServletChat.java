@@ -1,49 +1,35 @@
 package sber;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.*;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ServletChat extends HttpServlet {
-    private List<Message> chatMessages = new ArrayList<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServletChat.class);
 
-    private String getLoginFromCookie(HttpServletRequest request)
+    private static final List<Message> chatMessages = new CopyOnWriteArrayList<>();
+
+    private String getLoginFromSession(HttpServletRequest request)
     {
-        String login = null;
-
-        Cookie[] cookies = request.getCookies();
-        String cookieName = "login";
-        Cookie cookie = null;
-        if(cookies !=null) {
-            for(Cookie c: cookies) {
-                if(cookieName.equals(c.getName())) {
-                    cookie = c;
-                    break;
-                }
-            }
-        }
-
-        if(cookie!=null)
-        {
-            login = cookie.getValue();
-            return login;
-        }
-
+        // получаем сессию
+        HttpSession session = request.getSession();
+        // получаем объект login
+        String login = (String) session.getAttribute("login");
         return login;
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-        String login = getLoginFromCookie(request);
+        String login = getLoginFromSession(request);
 
         //проверяем что пользователь уже авторизовался
         if(login==null)
@@ -54,14 +40,14 @@ public class ServletChat extends HttpServlet {
             RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(path);
             requestDispatcher.forward(request, response);
 
-            System.out.println("Redirection to the authorization form.");
+            LOGGER.info("Redirection to the authorization form.");
         }
         else{
             //отображаем все сообщения чата
             request.setAttribute("chatMessages", chatMessages);
             getServletContext().getRequestDispatcher("/index.jsp").forward(request, response);
 
-            System.out.println("Displaying chat messages - "+login);
+            LOGGER.info("Displaying chat messages - {}",login);
         }
 
     }
@@ -78,40 +64,36 @@ public class ServletChat extends HttpServlet {
 
         //получение логина из формы авторизации
         if(login!=null) {
-            //устанавливаем в cookie пользователя значение логина, которое мы получили из формы авторизации
-            response.addCookie(new Cookie("login", login));
+            // получаем сессию
+            HttpSession session = request.getSession();
+
+            //устанавливаем в сессию пользователя логин
+            session.setAttribute("login", login);
 
             //обновляем страницу
             response.sendRedirect(request.getContextPath() + request.getServletPath());
 
-            System.out.println("Connect to chat user - " + login);
+            LOGGER.info("Connect to chat user - {}", login);
         }
         else if(msg!=null) //добавление в чат нового сообщения
         {
             //формируем сообщение и добавляем его в список
-            Message message = new Message(getLoginFromCookie(request),msg,new Date());
+            Message message = new Message(getLoginFromSession(request),msg,new Date());
             chatMessages.add(message);
 
             //обновляем страницу
             response.sendRedirect(request.getContextPath() + request.getServletPath());
-
-            System.out.println("Add message to chat");
+            LOGGER.info("Add message to chat");
         }
         else if(exit!=null) //выход из чата
         {
-            //устанавливаем в cookie время жизни 0, тем самым очищаем их и передаем обратно клиенту
-            Cookie[] cookies = request.getCookies();
-            if (cookies != null) {
-                for (Cookie cookie : cookies) {
-                    cookie.setMaxAge(0);
-                    response.addCookie(cookie);
-                }
-            }
-
+            // получаем сессию
+            HttpSession session = request.getSession();
+            String removeLogin = getLoginFromSession(request);
+            session.removeAttribute("login");
             //переходим на форму авторизации
-            getServletContext().getRequestDispatcher("/authorization-form.html").forward(request, response);
-
-            System.out.println("Exit from chat - "+getLoginFromCookie(request));
+            response.sendRedirect(request.getContextPath() + "/authorization-form.html");
+            LOGGER.info("Exit from chat - {}", removeLogin);
         }
 
     }
